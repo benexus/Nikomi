@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Nikomi.Core</RootNamespace>
+    <!-- The native structures read in ProcessSampler, ProcessDetails and ServiceMap are laid out for 64-bit
+         Windows (x64, and ARM64 running it). Built for x64, the library cannot be loaded into a 32-bit process
+         at all, instead of misreading those structures there. -->
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+</Project>

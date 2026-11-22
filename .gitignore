@@ -1,0 +1,29 @@
+﻿# Build output
+bin/
+obj/
+/app/
+/demo/
+/publish/
+*.nupkg
+TestResults/
+
+# IDE and per-user files
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.DotSettings.user
+
+# Local tooling
+.claude/
+
+# Never commit signing material or local logs
+*.pfx
+*.snk
+*.p12
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini

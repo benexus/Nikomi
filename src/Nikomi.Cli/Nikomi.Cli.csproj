@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The console program AI agents and scripts use. It has no dependency beyond .NET and the core library,
+       and is published next to Nikomi.exe. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>NikomiCli</AssemblyName>
+    <RootNamespace>Nikomi.Cli</RootNamespace>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nikomi.Core\Nikomi.Core.csproj" />
+  </ItemGroup>
+
+</Project>
