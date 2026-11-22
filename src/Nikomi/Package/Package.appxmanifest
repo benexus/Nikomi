@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Microsoft Store package of Nikomi, built with -p:Store=true (docs\manual.md, "Microsoft Store build").
+
+  Identity Name and Publisher, and PublisherDisplayName, are the Store's: Partner Center shows them under
+  Product identity, and they must match it exactly. Version is the one in Directory.Build.props with a
+  fourth part of 0; Nikomi.Check fails if the two disagree.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap5 desktop4 rescap">
+
+  <Identity
+    Name="IndieSoftware.Nikomi"
+    Publisher="CN=DA748DD7-9206-47F7-83C2-202E549BC85C"
+    Version="1.0.0.0" />
+
+  <Properties>
+    <DisplayName>Nikomi</DisplayName>
+    <PublisherDisplayName>Indie Software</PublisherDisplayName>
+    <Logo>Package\Images\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <!-- The build writes the project's target Windows version (net10.0-windows10.0.19041.0) as
+         MaxVersionTested, whatever stands here, so this says what the package carries. -->
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.19041.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <!-- SupportsMultipleInstances is required for the console alias below, so that several agents can run
+         NikomiCli at once. Nikomi itself still runs once per data folder (SingleInstance in Program.cs). -->
+    <Application Id="Nikomi" Executable="Nikomi.exe" EntryPoint="Windows.FullTrustApplication" desktop4:SupportsMultipleInstances="true">
+      <uap:VisualElements
+        DisplayName="Nikomi"
+        Description="Shows which process is keeping the CPU busy, and what started it."
+        BackgroundColor="transparent"
+        Square150x150Logo="Package\Images\Square150x150Logo.png"
+        Square44x44Logo="Package\Images\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Package\Images\Wide310x150Logo.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Start with Windows (StartupTaskInfo.TaskId). Off until the user turns it on in Nikomi. -->
+        <uap5:Extension Category="windows.startupTask" Executable="Nikomi.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:StartupTask TaskId="NikomiStartup" Enabled="false" DisplayName="Nikomi" />
+        </uap5:Extension>
+        <!-- "NikomiCli" for AI agents and scripts, a console program. It runs with the package's identity, so it
+             finds the app's data folder and its agent pipe. It is this app's alias rather than an app of its own:
+             an app without a Start menu entry (AppListEntry="none") is "headless", which the Store refuses
+             without a waiver. An app may declare only one alias, so there is no "Nikomi" command; the Start
+             menu opens the app. -->
+        <uap5:Extension Category="windows.appExecutionAlias" Executable="NikomiCli.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:AppExecutionAlias desktop4:Subsystem="console">
+            <uap5:ExecutionAlias Alias="NikomiCli.exe" />
+          </uap5:AppExecutionAlias>
+        </uap5:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- Nikomi reads and ends other processes, which only a full-trust desktop app may do. -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

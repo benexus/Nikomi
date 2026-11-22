@@ -1,0 +1,18 @@
+<Project>
+
+  <!-- Shared by every project in the repository, so the app, NikomiCli (which reports it to MCP hosts)
+       and the checks never disagree on the version. -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <!-- The Store build (-p:Store=true) restores and builds differently (packaged, self-contained), so it
+       keeps its own bin and obj folders and never mixes with the normal build's. -->
+  <PropertyGroup Condition="'$(Store)' == 'true'">
+    <BaseIntermediateOutputPath>obj\store\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin\store\</BaseOutputPath>
+    <!-- Not the normal build's generated files under obj\ either. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin\**;obj\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+</Project>

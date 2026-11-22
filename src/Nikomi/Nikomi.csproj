@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <RootNamespace>Nikomi</RootNamespace>
+    <AssemblyName>Nikomi</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>Assets\Nikomi.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <!-- Unpackaged, and the Windows App SDK runtime ships next to the exe: nothing to install. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Needed so the compiled XAML index (Nikomi.pri) is produced and published for an unpackaged app. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+  </PropertyGroup>
+
+  <!-- "dotnet publish -p:Demo=true" builds a Nikomi that shows made-up processes instead of this PC's,
+       for screenshots (DemoSource.cs, docs\manual.md). A normal build contains none of it. -->
+  <PropertyGroup Condition="'$(Demo)' == 'true'">
+    <DefineConstants>$(DefineConstants);DEMO</DefineConstants>
+  </PropertyGroup>
+
+  <!-- "dotnet build -p:Store=true" builds the Microsoft Store package (MSIX) into publish\store instead:
+       packaged, with .NET included (a Store package cannot rely on the .NET runtime being installed), and
+       unsigned, since the Store signs it. docs\manual.md, "Microsoft Store build". -->
+  <PropertyGroup Condition="'$(Store)' == 'true'">
+    <WindowsPackageType>MSIX</WindowsPackageType>
+    <SelfContained>true</SelfContained>
+    <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
+    <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <AppxBundle>Never</AppxBundle>
+    <AppxPackageDir>$(MSBuildThisFileDirectory)..\..\publish\store\</AppxPackageDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(Store)' == 'true'">
+    <AppxManifest Include="Package\Package.appxmanifest" />
+    <Content Include="Package\Images\*.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Only the WinUI part of the Windows App SDK. The full Microsoft.WindowsAppSDK package also ships
+         its AI, machine-learning, search and widgets parts next to the exe, which this app never loads. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.7.0" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\*.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\*.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nikomi.Core\Nikomi.Core.csproj" />
+    <!-- Referenced so that NikomiCli.exe, the console program for AI agents, is built and published next to the app. -->
+    <ProjectReference Include="..\Nikomi.Cli\Nikomi.Cli.csproj" />
+  </ItemGroup>
+
+</Project>

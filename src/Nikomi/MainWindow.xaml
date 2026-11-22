@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="Nikomi.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Nikomi"
+    Title="Nikomi">
+
+    <Grid x:Name="Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Title bar (drawn into the Mica backdrop) -->
+        <Grid x:Name="AppTitleBar" Height="48" Padding="16,0,150,0">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Image x:Name="TitleIcon" Width="20" Height="20" />
+                <TextBlock Text="Nikomi" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                <TextBlock x:Name="UpdatedText" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Stat cards -->
+        <Grid Grid.Row="1" Margin="16,4,16,12" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Style="{StaticResource CardStyle}" Padding="16,10">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="2" MinWidth="64">
+                        <TextBlock Text="Total CPU" Style="{StaticResource StatLabelStyle}" />
+                        <TextBlock x:Name="CpuValue" Text="-" Style="{StaticResource StatValueStyle}" />
+                        <TextBlock Text="last 60 s" Style="{StaticResource StatLabelStyle}" />
+                    </StackPanel>
+                    <local:LoadGraph x:Name="LiveGraph" Grid.Column="1" MinHeight="52"
+                                     AutomationProperties.Name="Total CPU load over the last 60 seconds" />
+                </Grid>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="16,10">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Logical cores" Style="{StaticResource StatLabelStyle}" />
+                    <TextBlock x:Name="CoresValue" Style="{StaticResource StatValueStyle}" />
+                    <TextBlock Text="1.00 core = one full core" Style="{StaticResource StatLabelStyle}" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="16,10">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Uptime" Style="{StaticResource StatLabelStyle}" />
+                    <TextBlock x:Name="UptimeValue" Style="{StaticResource StatValueStyle}" />
+                    <TextBlock x:Name="BootText" Style="{StaticResource StatLabelStyle}" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Style="{StaticResource CardStyle}" Padding="16,10">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Processes" Style="{StaticResource StatLabelStyle}" />
+                    <TextBlock x:Name="ProcsValue" Style="{StaticResource StatValueStyle}" />
+                    <TextBlock x:Name="IntervalText" Style="{StaticResource StatLabelStyle}" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="4" Style="{StaticResource CardStyle}" Padding="16,10">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Orphans (parent exited)" Style="{StaticResource StatLabelStyle}"
+                               ToolTipService.ToolTip="Processes whose parent has exited. That is common and harmless on its own." />
+                    <TextBlock x:Name="OrphansValue" Style="{StaticResource StatValueStyle}" />
+                    <HyperlinkButton Content="List them" Padding="0" Click="ShowOrphans_Click" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="5" Style="{StaticResource CardStyle}" Padding="16,10">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Runaway" Style="{StaticResource StatLabelStyle}" />
+                    <TextBlock x:Name="RunawayValue" Style="{StaticResource StatValueStyle}" />
+                    <TextBlock x:Name="RunawayRule" Style="{StaticResource StatLabelStyle}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Toolbar -->
+        <Grid Grid.Row="2" Margin="16,0,16,8" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <SelectorBar x:Name="ViewBar" SelectionChanged="ViewBar_SelectionChanged">
+                <SelectorBarItem Text="Top by CPU" Tag="top" IsSelected="True" />
+                <SelectorBarItem Text="All" Tag="all" />
+                <SelectorBarItem Text="Tree" Tag="tree" />
+                <SelectorBarItem Text="By name" Tag="names" />
+                <SelectorBarItem Text="Hot &amp; runaway" Tag="hot" />
+                <SelectorBarItem Text="Orphans" Tag="orphans" />
+                <SelectorBarItem Text="History" Tag="history" />
+            </SelectorBar>
+            <TextBox x:Name="FilterBox" Grid.Column="1" MaxWidth="440" MinWidth="120" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                     PlaceholderText="Filter by name, PID, description or command line (Ctrl+F)" TextChanged="FilterBox_TextChanged" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <ToggleButton x:Name="PauseButton" Click="PauseButton_Click" ToolTipService.ToolTip="Stop the list from moving while you read it">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE769;" FontSize="14" />
+                        <TextBlock Text="Pause" />
+                    </StackPanel>
+                </ToggleButton>
+                <Button Click="Refresh_Click" ToolTipService.ToolTip="Measure again now (F5)">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72C;" FontSize="14" />
+                        <TextBlock Text="Refresh" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="SettingsButton" Click="Settings_Click" ToolTipService.ToolTip="Settings" AutomationProperties.Name="Settings">
+                    <FontIcon Glyph="&#xE713;" FontSize="14" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <InfoBar x:Name="ResultBar" Grid.Row="3" Margin="16,0,16,8" IsOpen="False" />
+
+        <Border Grid.Row="4" Style="{StaticResource CardStyle}" Margin="16,0,16,8">
+            <Grid>
+                <!-- Process list. Every column has a fixed width; the list scrolls sideways when the window is
+                     narrower than the columns, and the header follows it. -->
+                <Grid x:Name="ProcPanel">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border BorderThickness="0,0,0,1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+                        <ScrollViewer x:Name="HeaderScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
+                                      HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" IsTabStop="False"
+                                      ViewChanged="HeaderScroll_ViewChanged">
+                            <Grid x:Name="HeaderRow" Width="2174" Margin="12,2,12,2" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="132" />
+                                    <ColumnDefinition Width="230" />
+                                    <ColumnDefinition Width="72" />
+                                    <ColumnDefinition Width="112" />
+                                    <ColumnDefinition Width="104" />
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="220" />
+                                    <ColumnDefinition Width="250" />
+                                    <ColumnDefinition Width="520" />
+                                    <ColumnDefinition Width="170" />
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="84" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Tag="Status" Content="Status" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                                <Button Grid.Column="1" Tag="Name" Content="Name" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                                <Button Grid.Column="2" Tag="Pid" Content="PID" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                                <Button Grid.Column="3" Tag="Cores" Content="Cores" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                                <Button Grid.Column="4" Tag="CpuTime" Content="CPU time" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                                <Button Grid.Column="5" Tag="Memory" Content="Memory" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click"
+                                        ToolTipService.ToolTip="Memory only this process uses (private working set), as in Task Manager" />
+                                <Button Grid.Column="6" Tag="Io" Content="I/O" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click"
+                                        ToolTipService.ToolTip="Bytes read and written per second: files, network and pipes together" />
+                                <Button Grid.Column="7" Tag="Description" Content="Description" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click"
+                                        ToolTipService.ToolTip="The services running in the process, or what the executable says it is" />
+                                <Button Grid.Column="8" Tag="Chain" Content="Started by" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                                <Button Grid.Column="9" Tag="Command" Content="Command line" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                                <Button Grid.Column="10" Tag="Started" Content="Started" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                                <Button Grid.Column="11" Tag="Threads" Content="Threads" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                                <Button Grid.Column="12" Tag="Handles" Content="Handles" Style="{StaticResource ColumnHeaderButtonStyle}" Click="Header_Click" />
+                            </Grid>
+                        </ScrollViewer>
+                    </Border>
+                    <TextBlock x:Name="ViewNote" Grid.Row="1" Margin="20,6,20,2" Visibility="Collapsed" TextWrapping="Wrap"
+                               Style="{StaticResource StatLabelStyle}" />
+                    <ListView x:Name="ProcList" Grid.Row="2" SelectionMode="Single" ItemsSource="{x:Bind Rows}"
+                              SelectionChanged="ProcList_SelectionChanged" Padding="0,4,0,4"
+                              Loaded="ProcList_Loaded" KeyDown="ProcList_KeyDown" RightTapped="ProcList_RightTapped"
+                              AutomationProperties.Name="Processes"
+                              ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="12,0,12,0" />
+                                <Setter Property="MinHeight" Value="34" />
+                                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:ProcessRow">
+                                <Grid Height="34" Width="2174" AutomationProperties.Name="{x:Bind Summary, Mode=OneWay}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="132" />
+                                        <ColumnDefinition Width="230" />
+                                        <ColumnDefinition Width="72" />
+                                        <ColumnDefinition Width="112" />
+                                        <ColumnDefinition Width="104" />
+                                        <ColumnDefinition Width="100" />
+                                        <ColumnDefinition Width="100" />
+                                        <ColumnDefinition Width="220" />
+                                        <ColumnDefinition Width="250" />
+                                        <ColumnDefinition Width="520" />
+                                        <ColumnDefinition Width="170" />
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="84" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Background="{x:Bind StatusBrush, Mode=OneWay}" Visibility="{x:Bind StatusVisibility, Mode=OneWay}"
+                                            CornerRadius="10" Padding="8,1,8,2" Margin="4,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind StatusText, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold" />
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Name, Mode=OneWay}" Margin="{x:Bind NameMargin, Mode=OneWay}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Name, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind PidText, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" Margin="8,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind CoresText, Mode=OneWay}" Width="34" FontWeight="SemiBold" />
+                                        <ProgressBar Value="{x:Bind CoresBar, Mode=OneWay}" Maximum="1" Width="46" VerticalAlignment="Center"
+                                                     AutomationProperties.AccessibilityView="Raw" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="4" Text="{x:Bind CpuTimeText, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="5" Text="{x:Bind MemoryText, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="6" Text="{x:Bind IoText, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Grid.Column="7" Text="{x:Bind DescriptionText, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind DescriptionText, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="8" Text="{x:Bind ChainText, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ChainText, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="9" Text="{x:Bind CommandLine, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               ToolTipService.ToolTip="{x:Bind CommandLine, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="10" Text="{x:Bind StartedText, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Grid.Column="11" Text="{x:Bind ThreadsText, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="12" Text="{x:Bind HandlesText, Mode=OneWay}" Margin="8,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+
+                <!-- History: what was busy, one line about every half minute -->
+                <Grid x:Name="HistoryPanel" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <!-- The last 24 hours as a graph; pointing at it shows that moment's line -->
+                    <Grid Padding="24,12,24,10" RowSpacing="6" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Total CPU, last 24 hours" Style="{StaticResource StatLabelStyle}" FontWeight="SemiBold" />
+                        <TextBlock x:Name="HistoryHover" Grid.Column="1" Margin="24,0,0,0" HorizontalAlignment="Right"
+                                   Style="{StaticResource StatLabelStyle}" TextTrimming="CharacterEllipsis" />
+                        <local:LoadGraph x:Name="HistoryGraph" Grid.Row="1" Grid.ColumnSpan="2" Height="120"
+                                         AutomationProperties.Name="Total CPU load over the last 24 hours" />
+                    </Grid>
+                    <Grid Grid.Row="1" Padding="24,8,24,8" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="170" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Time" Style="{StaticResource StatLabelStyle}" FontWeight="SemiBold" />
+                        <TextBlock Grid.Column="1" Text="Total CPU" Style="{StaticResource StatLabelStyle}" FontWeight="SemiBold" />
+                        <TextBlock Grid.Column="2" Text="Busiest processes, in cores" Style="{StaticResource StatLabelStyle}" FontWeight="SemiBold" />
+                    </Grid>
+                    <ListView x:Name="HistoryList" Grid.Row="2" SelectionMode="None" Padding="0,4,0,4" AutomationProperties.Name="History">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="24,0,24,0" />
+                                <Setter Property="MinHeight" Value="32" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:HistoryRow">
+                                <Grid Height="32" AutomationProperties.Name="{x:Bind Summary}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200" />
+                                        <ColumnDefinition Width="170" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind TimeText}" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind LoadText}" Width="40" FontWeight="SemiBold" />
+                                        <ProgressBar Value="{x:Bind LoadValue}" Maximum="100" Width="90" VerticalAlignment="Center"
+                                                     AutomationProperties.AccessibilityView="Raw" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind TopText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                               ToolTipService.ToolTip="{x:Bind TopText}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <TextBlock x:Name="HistoryEmpty" Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                               TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Details of the selected process -->
+        <Border Grid.Row="5" Style="{StaticResource CardStyle}" Margin="16,0,16,16" Height="260">
+            <Grid Padding="20,14,20,14">
+                <StackPanel x:Name="DetailEmptyPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                    <TextBlock x:Name="DetailEmpty" HorizontalAlignment="Center" TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <Button x:Name="GroupButton" Content="Show these processes" HorizontalAlignment="Center" Visibility="Collapsed"
+                            Click="GroupButton_Click" />
+                </StackPanel>
+                <Grid x:Name="DetailContent" Visibility="Collapsed" RowSpacing="10" ColumnSpacing="28">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.ColumnSpan="2" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock x:Name="DetailTitle" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                <Border x:Name="DetailBadge" CornerRadius="10" Padding="10,2,10,3" VerticalAlignment="Center">
+                                    <TextBlock x:Name="DetailBadgeText" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock x:Name="DetailSubtitle" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                            <DropDownButton x:Name="MoreButton" Content="More" ToolTipService.ToolTip="Copy, open the file location, change priority" />
+                            <Button x:Name="EndButton" Click="End_Click" ToolTipService.ToolTip="End this process (Delete)">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE711;" FontSize="14" />
+                                    <TextBlock Text="End process..." />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="EndTreeButton" Click="End_Click" ToolTipService.ToolTip="End it and everything it started (Shift+Delete)">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                                    <TextBlock Text="End process tree..." />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Executable" Style="{StaticResource StatLabelStyle}" />
+                            <TextBlock x:Name="DetailPath" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
+                            <TextBlock Text="What the file says it is (not verified)" Style="{StaticResource StatLabelStyle}" Margin="0,8,0,0" />
+                            <TextBlock x:Name="DetailWhat" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
+                            <TextBlock Text="Command line" Style="{StaticResource StatLabelStyle}" Margin="0,8,0,0" />
+                            <TextBlock x:Name="DetailCmd" IsTextSelectionEnabled="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" />
+                        </StackPanel>
+                    </ScrollViewer>
+                    <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Started by (oldest first)" Style="{StaticResource StatLabelStyle}" />
+                            <TextBlock x:Name="DetailChain" IsTextSelectionEnabled="True" FontFamily="Cascadia Mono, Consolas" FontSize="12" />
+                            <TextBlock x:Name="DetailChildren" Style="{StaticResource StatLabelStyle}" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

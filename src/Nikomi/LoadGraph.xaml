@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Nikomi.LoadGraph"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+
+    <!-- A filled line graph of CPU load, drawn like Task Manager's: 0% at the bottom, 100% at the top. -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Border BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                Background="{ThemeResource ControlAltFillColorTertiaryBrush}">
+            <Canvas x:Name="Surface" Background="Transparent">
+                <Path x:Name="GridPath" Stroke="{ThemeResource DividerStrokeColorDefaultBrush}" StrokeThickness="1" />
+                <Path x:Name="FillPath" Fill="{ThemeResource AccentFillColorDefaultBrush}" Opacity="0.22" />
+                <Path x:Name="LinePath" Stroke="{ThemeResource AccentFillColorDefaultBrush}" StrokeThickness="1.5"
+                      StrokeLineJoin="Round" />
+                <Line x:Name="Marker" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1"
+                      Visibility="Collapsed" />
+            </Canvas>
+        </Border>
+        <Canvas x:Name="Labels" Grid.Row="1" Height="18" Visibility="Collapsed" />
+    </Grid>
+</UserControl>
